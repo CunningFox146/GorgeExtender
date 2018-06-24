@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Atlas>
+	<Texture filename="gorge_foods_data.tex" />
+	<Elements>
+		<Element name="bread.tex" u1="0.001" u2="0.249" v2="0.999" v1="0.751" variant="" />
+		<Element name="cheese.tex" u1="0.251" u2="0.499" v2="0.999" v1="0.751" variant="" />
+		<Element name="desert.tex" u1="0.001" u2="0.249" v2="0.749" v1="0.501" variant="" />
+		<Element name="fish.tex" u1="0.251" u2="0.499" v2="0.749" v1="0.501" variant="" />
+		<Element name="meat.tex" u1="0.501" u2="0.749" v2="0.999" v1="0.751" variant="" />
+		<Element name="pasta.tex" u1="0.501" u2="0.749" v2="0.749" v1="0.501" variant="" />
+		<Element name="snack.tex" u1="0.751" u2="0.999" v2="0.999" v1="0.751" variant="" />
+		<Element name="soup.tex" u1="0.751" u2="0.999" v2="0.749" v1="0.501" variant="" />
+		<Element name="speed.tex" u1="0.001" u2="0.249" v2="0.499" v1="0.251" variant="" />
+		<Element name="timer.tex" u1="0.001" u2="0.249" v2="0.249" v1="0.001" variant="" />
+		<Element name="unknown.tex" u1="0.251" u2="0.499" v2="0.499" v1="0.251" variant="" />
+		<Element name="vegetable.tex" u1="0.501" u2="0.749" v2="0.499" v1="0.29396875" variant="" />
+	</Elements>
+</Atlas>
