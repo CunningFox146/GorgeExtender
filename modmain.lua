@@ -1,5 +1,5 @@
 modimport("scripts/libs/lib_ver.lua")
---_G.CHEATS_ENABLED = true
+_G.CHEATS_ENABLED = true
 --Не запусаем дважды
 if mods.quagmire_cunningfox ~= nil then
 	print("ERROR! Mod already enabled!")
@@ -236,7 +236,7 @@ AddClassPostConstruct("widgets/statusdisplays_quagmire_cravings", function(self)
 		end
 	end
 end)
-
+--[[
 _G.TheInput:AddKeyUpHandler(_G.KEY_F1, function()
 	-- if _G.ThePlayer.HUD and _G.ThePlayer.HUD.controls.inv.salt_hint then
 		-- local hint = _G.ThePlayer.HUD.controls.inv.salt_hint
@@ -259,11 +259,12 @@ _G.TheInput:AddKeyUpHandler(_G.KEY_F2, function()
 	else
 		_G.TheWorld.salt_closed = 1
 	end
-end)
+end)]]
 
 local SALT_TIMING = 150
 local TheInput = _G.TheInput
 local UpHacker = require "tools/upvaluehacker"
+local SaltTimer
 
 AddClassPostConstruct("widgets/inventorybar", function(self)
 	-- self.salt_hint = self:AddChild(Text(_G.UIFONT, 42, string.format(STRINGS.GORGE_EXTENDER.SALT_HINT, "F1", "F2")))
@@ -272,6 +273,8 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
 	self.salt_timer = self:AddChild(SaltWidget())
     self.salt_timer:SetPosition(350, 75)
     self.salt_timer:SetScale(.8)
+	
+	SaltTimer = self.salt_timer
 	
 	self.speed_timer = self:AddChild(SpeedWidget())
     self.speed_timer:SetPosition(-450, 75)
@@ -285,18 +288,27 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
 		
 		self.speed_timer.speed:SetString(string.format("%.2f", self.speed_timer.net_speed:value()))
 		
-		if _G.TheWorld.salt_timer and _G.TheWorld.salt_closed then
-			if _G.TheWorld.salt_closed % 2 == 1 then
-				if (_G.os.time()-_G.TheWorld.salt_timer)<SALT_TIMING then
-					self.salt_timer:SetTimeLeft(SALT_TIMING-(_G.os.time()-_G.TheWorld.salt_timer))
-				else
-					self.salt_timer:SetIsReady(true)
-				end
-			else
-				self.salt_timer:SetIsNotSet()
-			end
-		else
-			self.salt_timer:SetIsNotSet()
-		end
+		-- if _G.TheWorld.salt_timer and _G.TheWorld.salt_closed then
+			-- if _G.TheWorld.salt_closed % 2 == 1 then
+				-- if (_G.os.time()-_G.TheWorld.salt_timer)<SALT_TIMING then
+					-- self.salt_timer:SetTimeLeft(SALT_TIMING-(_G.os.time()-_G.TheWorld.salt_timer))
+				-- else
+					-- self.salt_timer:SetIsReady(true)
+				-- end
+			-- else
+				-- self.salt_timer:SetIsNotSet()
+			-- end
+		-- else
+			-- self.salt_timer:SetIsNotSet()
+		-- end
 	end
+end)
+
+--Extended salt timer
+AddPrefabPostInit("quagmire_salt_rack", function(inst)
+	inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
+		if inst.AnimState:IsCurrentAnimation("grow") and not SaltTimer.is_ready then
+			SaltTimer:PlayReady()
+		end
+	end)
 end)
