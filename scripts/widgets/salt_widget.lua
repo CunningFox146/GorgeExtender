@@ -32,6 +32,8 @@ end)
 function Timer:PlayReady()
 	if self.is_ready then return end
 	
+	self.is_ready = true
+	
 	self.root:MoveTo(self.root:GetPosition(), Vector3(0, 0, 0), .5, function()
 		self.checkmark:Show()
 		self.checkmark:ScaleTo(0,.45,.5)
@@ -40,9 +42,10 @@ function Timer:PlayReady()
 			TheFocalPoint.SoundEmitter:PlaySound("dontstarve/HUD/Together_HUD/chat_receive")
 		end
 		
-		self.inst:DoTaskInTime(2.5, function()
+		self.inst:DoTaskInTime(5, function()
+			self.is_ready = false
 			self.checkmark:ScaleTo(.45,0,.5,function() 
-				self.root:MoveTo(self.root:GetPosition(), Vector3(0, -250, 0), .25, function() self.is_ready = false end)
+				self.root:MoveTo(self.root:GetPosition(), Vector3(0, -250, 0), .25)
 				self.checkmark:Hide()
 			end)
 		end)

@@ -1,10 +1,11 @@
 modimport("scripts/libs/lib_ver.lua")
-_G.CHEATS_ENABLED = true
+--_G.CHEATS_ENABLED = true
 --Не запусаем дважды
 if mods.quagmire_cunningfox ~= nil then
 	print("ERROR! Mod already enabled!")
 	return
 end
+
 --Нет смысла запускать вне ивента
 if TheNet:GetServerGameMode() ~= "quagmire" then
 	print("ERROR! Not in Gorge. Aborting...")
@@ -21,6 +22,13 @@ Assets =
 	Asset("ATLAS", "images/gorge_foods_data.xml"),
 	Asset("ATLAS", "images/quagmire_hud.xml"),
 }
+
+do
+	SearchForModsByName()
+	if mods.active_mods_by_name["Lemom"] then 
+		TUNING.FIDOOOP_MOD = true
+	end
+end
 
 local STRINGS = _G.STRINGS
 
@@ -89,12 +97,81 @@ AddClassPostConstruct("widgets/controls", function(self)
 	
 	self.gorge_counter:MoveToBack()
 	self.gorge_counter:SetScale(COUNTER_SCALE)
-	
-	GetGlobal("test_override", function(pos, scale)
-		self.gorge_counter:SetPosition(150, -300 + pos)
-		self.gorge_counter:SetScale(scale)
-	end)
 end)
+
+local sayings = --На что реагируем
+{
+	"SNACK","MEAT","SOUP","VEGETABLE","FISH","BREAD","CHEESE","PASTA", "DESSERT",
+	"ХЛЕБНОЕ","СЫРОМ","РЫБУ","МЯСО","МАКАРОНЫ","ЗАКУСКУ","СУП","ДЕСЕРТ", "ОВОЩНОЕ",
+}
+
+local transl = 
+{
+	SNACK = "SNACK",
+	MEAT = "MEAT",
+	SOUP = "SOUP",
+	VEGETABLE = "VEGETABLE",
+	FISH = "FISH",
+	BREAD = "BREAD",
+	CHEESE = "CHEESE",
+	PASTA = "PASTA",
+	DESSERT = "DESERT",
+	
+	["ХЛЕБНОЕ"] = "BREAD",
+	["СЫРОМ"] = "CHEESE",
+	["РЫБУ"] = "FISH",
+	["МЯСО"] = "MEAT",
+	["МАКАРОНЫ"] = "PASTA",
+	["ЗАКУСКУ"] = "SNACK",
+	["СУП"] = "SOUP",
+	["ДЕСЕРТ"] = "DESERT",
+	["ОВОЩНОЕ"] = "VEGETABLE",
+	
+	--[[
+		"BREAD",
+		"CHEESE",
+		"FISH",
+		"MEAT",
+		"PASTA",
+		"SNACK",
+		"SOUP",
+		"DESERT",
+		"VEGETABLE",
+	]]
+}
+
+--For modders: If you want to add your strings and reactions, or you want to add translation compatibility, then use:
+--[[
+	local mods = _G.rawget(_G, "mods") or {}
+	if mods.quagmire_cunningfox then
+        mods.quagmire_cunningfox:AddSayingReaction(v, k == "SWEET" and "DESERT" or v)
+	end
+	
+	where string is what we are searchin for in her sayings, and reaction is what we are doing when we see this string
+	
+	--reaction can be:
+	"BREAD",
+	"CHEESE",
+	"FISH",
+	"MEAT",
+	"PASTA",
+	"SNACK",
+	"SOUP",
+	"DESERT", -- Yeah, not dessert
+	"VEGETABLE",
+]]
+
+local assert = _G.assert
+
+local function AddSayingReaction(str, val)
+	assert(str, "Failed to find a string when using AddSayingReaction.")
+	assert(val, "Failed to find a value when using AddSayingReaction.")
+	
+	table.insert(sayings, str)
+	transl[str] = val
+end
+
+mods.quagmire_cunningfox.AddSayingReaction = AddSayingReaction
 
 AddClassPostConstruct("components/talker", function(self)
 	local _Say = self.Say
@@ -115,34 +192,7 @@ AddClassPostConstruct("components/talker", function(self)
 					
 					local to_feed
 					local j=0
-					local sayings = --На что реагируем
-					{
-						"SNACK","MEAT","SOUP","VEGETABLE","FISH","BREAD","CHEESE","PASTA", "DESSERT",
-						"ХЛЕБНОЕ","СЫРОМ","РЫБУ","МЯСО","МАКАРОНЫ","ЗАКУСКУ","СУП","ДЕСЕРТ", "ОВОЩНОЕ",
-					}
 					
-					local transl = 
-					{
-						SNACK = "SNACK",
-						MEAT = "MEAT",
-						SOUP = "SOUP",
-						VEGETABLE = "VEGETABLE",
-						FISH = "FISH",
-						BREAD = "BREAD",
-						CHEESE = "CHEESE",
-						PASTA = "PASTA",
-						DESSERT = "DESERT",
-						
-						["ХЛЕБНОЕ"] = "BREAD",
-						["СЫРОМ"] = "CHEESE",
-						["РЫБУ"] = "FISH",
-						["МЯСО"] = "MEAT",
-						["МАКАРОНЫ"] = "PASTA",
-						["ЗАКУСКУ"] = "SNACK",
-						["СУП"] = "SOUP",
-						["ДЕСЕРТ"] = "DESERT",
-						["ОВОЩНОЕ"] = "VEGETABLE",
-					}
 					for i=1, #display_message do
 						--Разбиваем
 						if string.sub(display_message,i,i)==" " or
@@ -307,7 +357,7 @@ end)
 --Extended salt timer
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
 	inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
-		if inst.AnimState:IsCurrentAnimation("grow") and not SaltTimer.is_ready then
+		if inst.AnimState:IsCurrentAnimation("grow") then
 			SaltTimer:PlayReady()
 		end
 	end)
