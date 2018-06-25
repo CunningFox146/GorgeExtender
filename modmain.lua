@@ -190,6 +190,25 @@ AddClassPostConstruct("components/talker", function(self)
 						_G.ThePlayer.HUD.controls.mumsy:Say(display_message)--Показываем
 					end
 					
+					local FIDOOOP_MOD_STRINGS = {
+						SNACK = "SNACK",
+						SOUP = "SOUP",
+						VEGGIE = "VEGETABLE",
+						FISH = "FISH",
+						BREAD = "BREAD",
+						MEAT = "MEAT",
+						CHEESE = "CHEESE",
+						PASTA = "PASTA",
+						SWEET = "DESERT"
+					}
+					
+					if TUNING.FIDOOOP_MOD then
+						if FIDOOOP_MOD_STRINGS[display_message] ~= nil then
+							_G.ThePlayer.HUD.controls.food_bage:Set(FIDOOOP_MOD_STRINGS[display_message])
+							return
+						end
+					end
+					
 					local to_feed
 					local j=0
 					

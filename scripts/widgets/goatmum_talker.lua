@@ -35,7 +35,7 @@ local Mumsy = Class(Widget, function(self, owner)
     self.head:GetAnimState():SetBuild("quagmire_lemom")
 	self.head:GetAnimState():PlayAnimation("talk1", true)
 	self.head:SetScale(TUNING.FIDOOOP_MOD and .6 or .8)
-	self.head:SetPosition(0, TUNING.FIDOOOP_MOD and -150 or -225)
+	self.head:SetPosition(0, TUNING.FIDOOOP_MOD and -160 or -225)
 	
 	self.text = self:AddChild(Text(TALKINGFONT, 75, "test"))
 	self.text:SetHAlign(ANCHOR_LEFT)
@@ -61,7 +61,7 @@ function Mumsy:Say(txt)
 
 	self.text:SetString(txt)
 	local x = self.text:GetRegionSize()
-    self.head:SetPosition(-.5 * x - 175, -225)
+    self.head:SetPosition(-.5 * x - 175, TUNING.FIDOOOP_MOD and -160 or -225)
 	
 	self.head:GetAnimState():PlayAnimation("talk"..tostring(math.random(1,3)), true)
 	
