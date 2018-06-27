@@ -1,12 +1,12 @@
 local Image = require "widgets/image"
 local Widget = require "widgets/widget"
+local Text = require "widgets/text"
 
 local s = STRINGS.GORGE_EXTENDER
 
 local Timer = Class(Widget, function(self)
     Widget._ctor(self, "GorgeSaltTimer")
-	
-	self.is_ready = false
+	self.set = false
 	
     self.root = self:AddChild(Widget("root"))
 	self.root:SetPosition(0, -250)
@@ -23,33 +23,47 @@ local Timer = Class(Widget, function(self)
 	self.checkmark = self.root:AddChild(Image("images/ui.xml", "checkmark.tex"))
 	self.checkmark:SetPosition(30, 5)
 	self.checkmark:SetScale(.45)
-	self.checkmark:Hide()
+	
+	self.time = self.root:AddChild(Text(UIFONT, 75, 0))
+	self.time:SetPosition(30, 0)
 	
     self:SetClickable(false)
 end)
 
+function Timer:Start()
+	TheFrontEnd:StartUpdatingWidget(self)
+	self.start_time = os.time()
 
-function Timer:PlayReady()
-	if self.is_ready then return end
+	if not self.set then
+		self.root:CancelMoveTo()
+		self.root:MoveTo(self.root:GetPosition(), Vector3(0, 0, 0), .5)
+		self.set = true
+	end
+
+	self.time:Show()
+	self.time:ScaleTo(0,1,.5)
+	self.checkmark:ScaleTo(.45,0,.5,function() self.checkmark:Hide() end)
+end
+
+
+function Timer:Finish()
+	TheFrontEnd:StopUpdatingWidget(self)
+
+	self.time:ScaleTo(1, 0, .5, function() self.time:Hide() end)
+	self.checkmark:Show()
+	self.checkmark:ScaleTo(0,.45,.5)
 	
-	self.is_ready = true
-	
-	self.root:MoveTo(self.root:GetPosition(), Vector3(0, 0, 0), .5, function()
-		self.checkmark:Show()
-		self.checkmark:ScaleTo(0,.45,.5)
-		
-		if TheFocalPoint and TheFocalPoint.SoundEmitter then
-			TheFocalPoint.SoundEmitter:PlaySound("dontstarve/HUD/Together_HUD/chat_receive")
-		end
-		
-		self.inst:DoTaskInTime(5, function()
-			self.is_ready = false
-			self.checkmark:ScaleTo(.45,0,.5,function() 
-				self.root:MoveTo(self.root:GetPosition(), Vector3(0, -250, 0), .25)
-				self.checkmark:Hide()
-			end)
-		end)
-	end)
+	if TheFocalPoint and TheFocalPoint.SoundEmitter then
+		TheFocalPoint.SoundEmitter:PlaySound("dontstarve/HUD/Together_HUD/chat_receive")
+	end
+end
+
+local SALT_TIMING = 150
+
+function Timer:OnUpdate(dt)
+	if (os.time() - self.start_time)<SALT_TIMING then
+		self.time:SetString(str_seconds(SALT_TIMING - (os.time() - self.start_time)))
+	end
 end
 
 return Timer

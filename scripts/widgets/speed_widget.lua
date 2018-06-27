@@ -21,4 +21,8 @@ local SpeedDisplay = Class(Widget, function(self)
     self:SetClickable(false)
 end)
 
+function SpeedDisplay:OnUpdate(dt)
+	self.speed:SetString(string.format("%.2f", self.net_speed:value()))
+end
+
 return SpeedDisplay

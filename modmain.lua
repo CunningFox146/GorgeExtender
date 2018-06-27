@@ -291,6 +291,7 @@ AddClassPostConstruct("widgets/statusdisplays_quagmire_cravings", function(self)
 	self.percent_bg:SetScale(.15, .65, 1)
 	self.percent_bg:SetPosition(0, COUNTER_MODE > 2 and -25 - 74.5 or 0 -74.5)
 	self.percent_bg:MoveToBack()
+    self.percent_bg:SetClickable(false)
 
 	local _OnUpdate = self.OnUpdate
 	function self:OnUpdate(dt)
@@ -305,33 +306,7 @@ AddClassPostConstruct("widgets/statusdisplays_quagmire_cravings", function(self)
 		end
 	end
 end)
---[[
-_G.TheInput:AddKeyUpHandler(_G.KEY_F1, function()
-	-- if _G.ThePlayer.HUD and _G.ThePlayer.HUD.controls.inv.salt_hint then
-		-- local hint = _G.ThePlayer.HUD.controls.inv.salt_hint
-		-- hint:MoveTo(hint:GetPosition(), Vector3(hint:GetRegionSize()+10, -100, 0), .5)
-	-- end
-	
-	_G.TheWorld.salt_timer = _G.os.time()
-	_G.TheWorld.salt_closed = 1
-end)
 
-
-_G.TheInput:AddKeyUpHandler(_G.KEY_F2, function()
-	-- if _G.ThePlayer.HUD and _G.ThePlayer.HUD.controls.inv.salt_hint then
-		-- local hint = _G.ThePlayer.HUD.controls.inv.salt_hint
-		-- hint:MoveTo(hint:GetPosition(), Vector3(hint:GetRegionSize()+10, -100, 0), .5)
-	-- end
-	
-	if _G.TheWorld.salt_closed then
-		_G.TheWorld.salt_closed = _G.TheWorld.salt_closed + 1
-	else
-		_G.TheWorld.salt_closed = 1
-	end
-end)]]
-
-local SALT_TIMING = 150
-local TheInput = _G.TheInput
 local UpHacker = require "tools/upvaluehacker"
 local SaltTimer
 
@@ -351,33 +326,25 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
 	
 	self.speed_timer.net_speed = UpHacker.GetUpvalue(_G.TheWorld.net.components.quagmire_hangriness.GetLevel, "_netvars").speed
 	
-	local _OnUpdate = self.OnUpdate or function(...) end
-	function self:OnUpdate(dt)
-		_OnUpdate(self, dt)
-		
-		self.speed_timer.speed:SetString(string.format("%.2f", self.speed_timer.net_speed:value()))
-		
-		-- if _G.TheWorld.salt_timer and _G.TheWorld.salt_closed then
-			-- if _G.TheWorld.salt_closed % 2 == 1 then
-				-- if (_G.os.time()-_G.TheWorld.salt_timer)<SALT_TIMING then
-					-- self.salt_timer:SetTimeLeft(SALT_TIMING-(_G.os.time()-_G.TheWorld.salt_timer))
-				-- else
-					-- self.salt_timer:SetIsReady(true)
-				-- end
-			-- else
-				-- self.salt_timer:SetIsNotSet()
-			-- end
-		-- else
-			-- self.salt_timer:SetIsNotSet()
-		-- end
-	end
+	TheFrontEnd:StartUpdatingWidget(self.speed_timer)
 end)
 
 --Extended salt timer
+--Zarklord: we don't currently properly handle having mutliple salt racks so we do this for the first salt rack only.
+local once = true
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
-	inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
-		if inst.AnimState:IsCurrentAnimation("grow") then
-			SaltTimer:PlayReady()
-		end
-	end)
+	if once then
+		local wasJustPicked = false
+		local isGrowing = false
+		inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
+			if SaltTimer.set == false or wasJustPicked and inst.AnimState:IsCurrentAnimation("idle") then
+				SaltTimer:Start()
+			elseif not isGrowing and inst.AnimState:IsCurrentAnimation("grow") then
+				SaltTimer:Finish()
+			end
+			wasJustPicked = inst.AnimState:IsCurrentAnimation("picked")
+			isGrowing = inst.AnimState:IsCurrentAnimation("grow")
+		end)
+		once = false
+	end
 end)
