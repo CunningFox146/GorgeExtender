@@ -1,6 +1,6 @@
 name = " Gorge extender"
 author = "Cunning fox"
-version = "1.51"
+version = "1.6"
 
 russian = name.utf8len and (russian or language == "ru")
 
