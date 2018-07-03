@@ -331,20 +331,18 @@ end)
 
 --Extended salt timer
 --Zarklord: we don't currently properly handle having mutliple salt racks so we do this for the first salt rack only.
-local once = true
+local once = nil
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
-	if once then
-		local wasJustPicked = false
-		local isGrowing = false
-		inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
-			if SaltTimer.set == false or wasJustPicked and inst.AnimState:IsCurrentAnimation("idle") then
+	local x, y, z = inst:GetPosition()
+	if once == nil or (once.x == x and once.y == y and once.z == z) then
+		if inst.find_task then inst.find_task:Cancel() end
+		inst.find_task = inst:DoPeriodicTask(0.5, function(inst)
+			if SaltTimer.start_time == 0 and not inst:HasTag("harvestable") then
 				SaltTimer:Start()
-			elseif not isGrowing and inst.AnimState:IsCurrentAnimation("grow") then
+			elseif SaltTimer.start_time ~= 0 and inst:HasTag("harvestable") then
 				SaltTimer:Finish()
 			end
-			wasJustPicked = inst.AnimState:IsCurrentAnimation("picked")
-			isGrowing = inst.AnimState:IsCurrentAnimation("grow")
 		end)
-		once = false
+		once = {x = x, y = y, z = z}
 	end
 end)

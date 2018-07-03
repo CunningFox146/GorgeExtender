@@ -27,6 +27,8 @@ local Timer = Class(Widget, function(self)
 	self.time = self.root:AddChild(Text(UIFONT, 75, 0))
 	self.time:SetPosition(30, 0)
 	
+	self.start_time = 0
+
     self:SetClickable(false)
 end)
 
@@ -49,6 +51,7 @@ end
 function Timer:Finish()
 	TheFrontEnd:StopUpdatingWidget(self)
 
+	self.start_time = 0
 	self.time:ScaleTo(1, 0, .5, function() self.time:Hide() end)
 	self.checkmark:Show()
 	self.checkmark:ScaleTo(0,.45,.5)
@@ -61,8 +64,10 @@ end
 local SALT_TIMING = 150
 
 function Timer:OnUpdate(dt)
-	if (os.time() - self.start_time)<SALT_TIMING then
+	if (os.time() - self.start_time) < SALT_TIMING then
 		self.time:SetString(str_seconds(SALT_TIMING - (os.time() - self.start_time)))
+	else
+		self:Finish()
 	end
 end
 
