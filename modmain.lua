@@ -1,20 +1,95 @@
 modimport("scripts/libs/lib_ver.lua")
---_G.CHEATS_ENABLED = true
---Не запусаем дважды
-if mods.quagmire_cunningfox ~= nil then
-	print("ERROR! Mod already enabled!")
-	return
-end
 
---Нет смысла запускать вне ивента
-if TheNet:GetServerGameMode() ~= "quagmire" then
-	print("ERROR! Not in Gorge. Aborting...")
+--_G.CHEATS_ENABLED = true
+
+--Not launching if some other fork is enabled
+if mods.quagmire_cunningfox ~= nil then
+	print("[Gorge Extender] ERROR: Mod already enabled!")
 	return
 end
 
 mods.quagmire_cunningfox = {
 	root = MODROOT,
+	version = modinfo.version,
 }
+
+local STRINGS = _G.STRINGS
+local s = STRINGS
+
+STRINGS.GORGE_EXTENDER = {
+	SALT_HINT = "Press %s to start salt timer, and %s to stop!",
+	UNKNOWN = "???",
+	SNACK = "Snack",
+	MEAT = "Meat",
+	SOUP = "Soup",
+	VEGETABLE = "Vegetable",
+	FISH = "Fish",
+	BREAD = "Bread",
+	CHEESE = "Cheese",
+	PASTA = "Pasta",
+	DESERT = "Dessert",
+	
+	WARNING = "Warning!",
+	UPDATE_BODY = "You need to update Gorge extender! Latest version:",
+	UPDATE = "Update!",
+}
+
+--Нативный русский
+if mods.RussianLanguagePack then
+	STRINGS.GORGE_EXTENDER = {
+		SALT_HINT = "Нажми %s чтоб запустить таймер, и %s чтоб отключить!",
+		UNKNOWN = "???",
+		SNACK = "Закуска",
+		MEAT = "Мясо",
+		SOUP = "Суп",
+		VEGETABLE = "Овощи",
+		FISH = "Рыба",
+		BREAD = "Хлеб",
+		CHEESE = "Сыр",
+		PASTA = "Макароны",
+		DESERT = "Десерт",
+		
+		WARNING = "Внимание!",
+		UPDATE_BODY = "Вам нужно обновить Gorge extender! Последняя версия:",
+		UPDATE = "Обновить!",
+	}
+end
+
+--No warning about mods in events
+AddClassPostConstruct("screens/redux/multiplayermainscreen", function(self)
+	local TheFrontEnd = _G.TheFrontEnd
+	local PopupDialogScreen = require "screens/redux/popupdialog"
+	
+	--I don't know how to get it from here, so just replacing it
+	function self:OnFestivalEventButton()
+		if TheFrontEnd:GetIsOfflineMode() or not TheNet:IsOnlineMode() then
+			TheFrontEnd:PushScreen(PopupDialogScreen(STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_TITLE, STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_BODY[WORLD_FESTIVAL_EVENT], 
+				{
+					{text=STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_LOGIN, cb = function()
+							_G.SimReset()
+						end},
+					{text=STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_BACK, cb=function() TheFrontEnd:PopScreen() end },
+				}))
+		else
+			self:_GoToFestfivalEventScreen()
+		end
+	end
+end)
+
+--Checking for mod updates
+local UpdateChecker = require("widgets/gorge_updater")
+
+AddClassPostConstruct("screens/redux/multiplayermainscreen", function(self, ...)
+	self.gorge_updater = self.title:AddChild(UpdateChecker())
+	self.gorge_updater:SetScale(2.15)
+	self.gorge_updater:SetPosition(875, -50)
+end)
+
+--We don't need to do other things outside the gorge
+if TheNet:GetServerGameMode() ~= "quagmire" then
+	print("[Gorge extender] Not in Gorge. Aborting...")
+	return
+end
 
 Assets = 
 {
@@ -30,38 +105,6 @@ do
 	end
 end
 
-local STRINGS = _G.STRINGS
-
-STRINGS.GORGE_EXTENDER = {
-	SALT_HINT = "Press %s to start salt timer, and %s to stop!",
-	UNKNOWN = "???",
-	SNACK = "Snack",
-	MEAT = "Meat",
-	SOUP = "Soup",
-	VEGETABLE = "Vegetable",
-	FISH = "Fish",
-	BREAD = "Bread",
-	CHEESE = "Cheese",
-	PASTA = "Pasta",
-	DESERT = "Dessert",
-}
---Нативный русский
-if mods.RussianLanguagePack then
-	STRINGS.GORGE_EXTENDER = {
-		SALT_HINT = "Нажми %s чтоб запустить таймер, и %s чтоб отключить!",
-		UNKNOWN = "???",
-		SNACK = "Закуска",
-		MEAT = "Мясо",
-		SOUP = "Суп",
-		VEGETABLE = "Овощи",
-		FISH = "Рыба",
-		BREAD = "Хлеб",
-		CHEESE = "Сыр",
-		PASTA = "Макароны",
-		DESERT = "Десерт",
-	}
-end
-
 local COUNTER_MODE = GetModConfigData("counter_mode") or 1
 local COUNTER_POS = GetModConfigData("counter_leftright") or 1
 local COUNTER_OVERRIDE = GetModConfigData("counter_pos") or 0
@@ -75,6 +118,7 @@ local CounterLeft = require "widgets/gorge_counter_left"
 local CounterRight = require "widgets/gorge_counter_right"
 local SaltWidget = require "widgets/salt_widget"
 local SpeedWidget = require "widgets/speed_widget"
+local SapWidget = require "widgets/sap_widget"
 
 AddClassPostConstruct("widgets/controls", function(self)
 	if GetModConfigData("mumsy") then
@@ -307,8 +351,12 @@ AddClassPostConstruct("widgets/statusdisplays_quagmire_cravings", function(self)
 	end
 end)
 
+local SAP_TIMING = 120
+local TheInput = _G.TheInput
 local UpHacker = require "tools/upvaluehacker"
 local SaltTimer
+local SapClosed
+local SapTiming
 
 AddClassPostConstruct("widgets/inventorybar", function(self)
 	-- self.salt_hint = self:AddChild(Text(_G.UIFONT, 42, string.format(STRINGS.GORGE_EXTENDER.SALT_HINT, "F1", "F2")))
@@ -327,6 +375,67 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
 	self.speed_timer.net_speed = UpHacker.GetUpvalue(_G.TheWorld.net.components.quagmire_hangriness.GetLevel, "_netvars").speed
 	
 	TheFrontEnd:StartUpdatingWidget(self.speed_timer)
+	
+	--Sap Timer
+	self.sap_timer = self:AddChild(SapWidget())
+    self.sap_timer:SetPosition(550, 75)
+    self.sap_timer:SetScale(.8)
+	local _OnUpdate = self.OnUpdate or function(...) end
+	
+	function self:OnUpdate(dt)
+		_OnUpdate(self, dt)
+		
+		if SapTiming and SapClosed then
+			if SapClosed % 2 == 1 then
+				if (_G.os.time()-SapTiming)<SAP_TIMING then
+					self.sap_timer:SetTimeLeft(SAP_TIMING-(_G.os.time()-SapTiming))
+				else
+					self.sap_timer:SetIsReady(true)
+				end
+			else
+				self.sap_timer:SetIsNotSet()
+			end
+		else
+			self.sap_timer:SetIsNotSet()
+		end
+	end
+end)
+
+local KEY_START = GetModConfigData("sap_start_key")
+local KEY_STOP = GetModConfigData("sap_stop_key")
+
+if KEY_START == KEY_STOP then
+	print("ERROR! Start and stop keys are the same. Reseting to F1 and F2.")
+	KEY_START = 282
+	KEY_STOP = 283
+end
+
+local function CanUse()
+	if not _G.InGamePlay() then
+		return false
+	elseif GetModConfigData("use_ctrl") and TheInput:IsKeyDown(_G.KEY_CTRL) then
+		return true
+	end
+	
+	return false
+end
+
+_G.TheInput:AddKeyUpHandler(KEY_START, function()
+	if CanUse() then
+		SapTiming = _G.os.time()
+		SapClosed = 1
+	end
+end)
+
+
+_G.TheInput:AddKeyUpHandler(KEY_STOP, function()
+	if not CanUse() then return end
+	
+	if SapClosed then
+		SapClosed = SapClosed + 1
+	else
+		SapClosed = 1
+	end
 end)
 
 --Extended salt timer
@@ -346,3 +455,43 @@ AddPrefabPostInit("quagmire_salt_rack", function(inst)
 		once = {x = x, y = y, z = z}
 	end
 end)
+
+--Renaming seeds
+local nm = _G.STRINGS.NAMES
+
+nm.QUAGMIRE_SEEDS_1 = "Wheat Seeds"
+nm.QUAGMIRE_SEEDS_2 = "Potato Seeds"
+nm.QUAGMIRE_SEEDS_3 = "Tomato Seeds"
+nm.QUAGMIRE_SEEDS_4 = "Onion Seeds"
+nm.QUAGMIRE_SEEDS_5 = "Turnip Seeds"
+nm.QUAGMIRE_SEEDS_6 = "Carrot Seeds"
+nm.QUAGMIRE_SEEDS_7 = "Garlic Seed Pods"
+nm.QUAGMIRE_SEEDPACKET_1 = "Packet of Wheat Seeds"
+nm.QUAGMIRE_SEEDPACKET_2 = "Packet of Potato Seeds"
+nm.QUAGMIRE_SEEDPACKET_3 = "Packet of Tomato Seeds"
+nm.QUAGMIRE_SEEDPACKET_4 = "Packet of Onion Seeds"
+nm.QUAGMIRE_SEEDPACKET_5 = "Packet of Turnip Seeds"
+nm.QUAGMIRE_SEEDPACKET_6 = "Packet of Carrot Seeds"
+nm.QUAGMIRE_SEEDPACKET_7 = "Packet of Garlic Seed Pods"
+
+local rus = mods.RussianLanguagePack
+local RegisterRussianName = rus and rus.RegisterRussianName
+	
+if RegisterRussianName then
+	RegisterRussianName("QUAGMIRE_SEEDS_1", "Семена пшеницы", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDS_2", "Семена картошки", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDS_3", "Семена томатов", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDS_4", "Семена лука", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDS_5", "Семена брюквы", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDS_6", "Семена моркови", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDS_7", "Семена чеснока", 5, 1)
+	
+	RegisterRussianName("QUAGMIRE_SEEDPACKET_1", "Семена пшеницы", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDPACKET_2", "Семена картошки", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDPACKET_3", "Семена томатов", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDPACKET_4", "Семена лука", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDPACKET_5", "Семена брюквы", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDPACKET_6", "Семена моркови", 5, 1)
+	RegisterRussianName("QUAGMIRE_SEEDPACKET_7", "Семена чеснока", 5, 1)
+end
+

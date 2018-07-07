@@ -22,7 +22,7 @@ local Timer = Class(Widget, function(self)
 	
 	self.checkmark = self.root:AddChild(Image("images/ui.xml", "checkmark.tex"))
 	self.checkmark:SetPosition(30, 5)
-	self.checkmark:SetScale(.45)
+	self.checkmark:SetScale(--[[.45]]0)
 	
 	self.time = self.root:AddChild(Text(UIFONT, 75, 0))
 	self.time:SetPosition(30, 0)
@@ -44,7 +44,7 @@ function Timer:Start()
 
 	self.time:Show()
 	self.time:ScaleTo(0,1,.5)
-	self.checkmark:ScaleTo(.45,0,.5,function() self.checkmark:Hide() end)
+	self.checkmark:ScaleTo(.45,0,.5--[[,function() self.checkmark:Hide() end]])
 end
 
 
@@ -53,7 +53,7 @@ function Timer:Finish()
 
 	self.start_time = 0
 	self.time:ScaleTo(1, 0, .5, function() self.time:Hide() end)
-	self.checkmark:Show()
+	--self.checkmark:Show()
 	self.checkmark:ScaleTo(0,.45,.5)
 	
 	if TheFocalPoint and TheFocalPoint.SoundEmitter then
