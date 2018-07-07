@@ -1,6 +1,6 @@
 name = " Gorge extender"
 author = "Cunning fox, Zarklord"
-version = "2.0"
+version = "2.01"
 
 russian = name.utf8len and (russian or language == "ru")
 
@@ -124,6 +124,13 @@ configuration_options = {
 	{
 		name = "mumsy",
 		label = russian and "Добавить виджет Мамси?" or "Add mumsy talker widget?",
+		options = opt_YesNo,
+		default = true,
+	},
+	
+	{
+		name = "rename_seeds",
+		label = russian and "Переименовать семена?" or "Rename the seeds?",
 		options = opt_YesNo,
 		default = true,
 	},

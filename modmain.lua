@@ -413,11 +413,11 @@ end
 local function CanUse()
 	if not _G.InGamePlay() then
 		return false
-	elseif GetModConfigData("use_ctrl") and TheInput:IsKeyDown(_G.KEY_CTRL) then
-		return true
+	elseif GetModConfigData("use_ctrl") and not TheInput:IsKeyDown(_G.KEY_CTRL) then
+		return false
 	end
 	
-	return false
+	return true
 end
 
 _G.TheInput:AddKeyUpHandler(KEY_START, function()
@@ -457,41 +457,42 @@ AddPrefabPostInit("quagmire_salt_rack", function(inst)
 end)
 
 --Renaming seeds
-local nm = _G.STRINGS.NAMES
+if GetModConfigData("rename_seeds") then
+	local nm = _G.STRINGS.NAMES
 
-nm.QUAGMIRE_SEEDS_1 = "Wheat Seeds"
-nm.QUAGMIRE_SEEDS_2 = "Potato Seeds"
-nm.QUAGMIRE_SEEDS_3 = "Tomato Seeds"
-nm.QUAGMIRE_SEEDS_4 = "Onion Seeds"
-nm.QUAGMIRE_SEEDS_5 = "Turnip Seeds"
-nm.QUAGMIRE_SEEDS_6 = "Carrot Seeds"
-nm.QUAGMIRE_SEEDS_7 = "Garlic Seed Pods"
-nm.QUAGMIRE_SEEDPACKET_1 = "Packet of Wheat Seeds"
-nm.QUAGMIRE_SEEDPACKET_2 = "Packet of Potato Seeds"
-nm.QUAGMIRE_SEEDPACKET_3 = "Packet of Tomato Seeds"
-nm.QUAGMIRE_SEEDPACKET_4 = "Packet of Onion Seeds"
-nm.QUAGMIRE_SEEDPACKET_5 = "Packet of Turnip Seeds"
-nm.QUAGMIRE_SEEDPACKET_6 = "Packet of Carrot Seeds"
-nm.QUAGMIRE_SEEDPACKET_7 = "Packet of Garlic Seed Pods"
+	nm.QUAGMIRE_SEEDS_1 = "Wheat Seeds"
+	nm.QUAGMIRE_SEEDS_2 = "Potato Seeds"
+	nm.QUAGMIRE_SEEDS_3 = "Tomato Seeds"
+	nm.QUAGMIRE_SEEDS_4 = "Onion Seeds"
+	nm.QUAGMIRE_SEEDS_5 = "Turnip Seeds"
+	nm.QUAGMIRE_SEEDS_6 = "Carrot Seeds"
+	nm.QUAGMIRE_SEEDS_7 = "Garlic Seed Pods"
+	nm.QUAGMIRE_SEEDPACKET_1 = "Packet of Wheat Seeds"
+	nm.QUAGMIRE_SEEDPACKET_2 = "Packet of Potato Seeds"
+	nm.QUAGMIRE_SEEDPACKET_3 = "Packet of Tomato Seeds"
+	nm.QUAGMIRE_SEEDPACKET_4 = "Packet of Onion Seeds"
+	nm.QUAGMIRE_SEEDPACKET_5 = "Packet of Turnip Seeds"
+	nm.QUAGMIRE_SEEDPACKET_6 = "Packet of Carrot Seeds"
+	nm.QUAGMIRE_SEEDPACKET_7 = "Packet of Garlic Seed Pods"
 
-local rus = mods.RussianLanguagePack
-local RegisterRussianName = rus and rus.RegisterRussianName
-	
-if RegisterRussianName then
-	RegisterRussianName("QUAGMIRE_SEEDS_1", "Семена пшеницы", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDS_2", "Семена картошки", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDS_3", "Семена томатов", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDS_4", "Семена лука", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDS_5", "Семена брюквы", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDS_6", "Семена моркови", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDS_7", "Семена чеснока", 5, 1)
-	
-	RegisterRussianName("QUAGMIRE_SEEDPACKET_1", "Семена пшеницы", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDPACKET_2", "Семена картошки", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDPACKET_3", "Семена томатов", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDPACKET_4", "Семена лука", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDPACKET_5", "Семена брюквы", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDPACKET_6", "Семена моркови", 5, 1)
-	RegisterRussianName("QUAGMIRE_SEEDPACKET_7", "Семена чеснока", 5, 1)
+	local rus = mods.RussianLanguagePack
+	local RegisterRussianName = rus and rus.RegisterRussianName
+		
+	if RegisterRussianName then
+		RegisterRussianName("QUAGMIRE_SEEDS_1", "Семена пшеницы", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDS_2", "Семена картошки", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDS_3", "Семена томатов", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDS_4", "Семена лука", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDS_5", "Семена брюквы", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDS_6", "Семена моркови", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDS_7", "Семена чеснока", 5, 1)
+		
+		RegisterRussianName("QUAGMIRE_SEEDPACKET_1", "Семена пшеницы", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDPACKET_2", "Семена картошки", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDPACKET_3", "Семена томатов", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDPACKET_4", "Семена лука", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDPACKET_5", "Семена брюквы", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDPACKET_6", "Семена моркови", 5, 1)
+		RegisterRussianName("QUAGMIRE_SEEDPACKET_7", "Семена чеснока", 5, 1)
+	end
 end
-
