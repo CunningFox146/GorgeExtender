@@ -356,20 +356,18 @@ AddWorldPostInit(function(w)
 		[00:10:45]: K: 	4	 V: 	0	
 	]]
 	w:ListenForEvent("quagmire_recipeappraised", function(w, data)
+		_G.ThePlayer.HUD.controls.gorge_counter:AddMeal()
+		
 		for coin, count in pairs(data.coins) do
-			if count <= 0 then return end
-			
-			if coin > 1 then
-				--print("POINTS + "..COIN_VALUES[coin][count])
-				FOOD_POINTS = FOOD_POINTS + COIN_VALUES[coin][count]
-			else
-				--print("COIN POINTS = "..count)
-				FOOD_POINTS = FOOD_POINTS + count
+			if count > 0 then
+				if coin > 1 then
+					FOOD_POINTS = FOOD_POINTS + COIN_VALUES[coin][count]
+				else
+					FOOD_POINTS = FOOD_POINTS + count
+				end
 			end
 		end
 	
-		_G.ThePlayer.HUD.controls.gorge_counter:AddMeal()
-		
 		if not TOURNAMENT_CACHE[data.product] then
 			TOURNAMENT_CACHE[data.product] = true
 		else
@@ -565,7 +563,7 @@ end)
 --Zarklord: we don't currently properly handle having mutliple salt racks so we do this for the first salt rack only.
 local cached_rack
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
-	if not cached_rack or cached_rack == inst.GUID then
+	if not cached_rack or cached_rack == inst then
 		if inst.find_task then inst.find_task:Cancel() end
 		inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
 			if SaltTimer.start_time == 0 and not inst:HasTag("harvestable") then
@@ -574,7 +572,7 @@ AddPrefabPostInit("quagmire_salt_rack", function(inst)
 				SaltTimer:Finish()
 			end
 		end)
-		cached_rack = inst.GUID
+		cached_rack = inst
 	end
 end)
 
