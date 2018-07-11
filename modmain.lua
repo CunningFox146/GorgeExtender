@@ -1,6 +1,6 @@
 modimport("scripts/libs/lib_ver.lua")
 
---_G.CHEATS_ENABLED = true
+_G.CHEATS_ENABLED = true
 
 --Not launching if some other fork is enabled
 if mods.quagmire_cunningfox ~= nil then
@@ -86,10 +86,10 @@ AddClassPostConstruct("screens/redux/multiplayermainscreen", function(self, ...)
 end)
 
 --We don't need to do other things outside the gorge
-if TheNet:GetServerGameMode() ~= "quagmire" then
-	print("[Gorge extender] Not in Gorge. Aborting...")
-	return
-end
+-- if TheNet:GetServerGameMode() ~= "quagmire" then
+	-- print("[Gorge extender] Not in Gorge. Aborting...")
+	-- return
+-- end
 
 Assets = 
 {
@@ -119,6 +119,9 @@ local CounterRight = require "widgets/gorge_counter_right"
 local SaltWidget = require "widgets/salt_widget"
 local SpeedWidget = require "widgets/speed_widget"
 local SapWidget = require "widgets/sap_widget"
+local TournamentScore = require "widgets/gorge_score"
+
+local Score
 
 AddClassPostConstruct("widgets/controls", function(self)
 	if GetModConfigData("mumsy") then
@@ -141,6 +144,12 @@ AddClassPostConstruct("widgets/controls", function(self)
 	
 	self.gorge_counter:MoveToBack()
 	self.gorge_counter:SetScale(COUNTER_SCALE)
+	
+	self.quag_score = self.right_root:AddChild(TournamentScore())
+	self.quag_score:SetPosition(0, 275)
+	self.quag_score:MoveToFront()
+	
+	Score = self.quag_score
 end)
 
 local sayings = --На что реагируем
@@ -281,10 +290,108 @@ AddClassPostConstruct("components/talker", function(self)
 	end
 end)
 
+--Tournament score
+--[[
+	coin1 1 point per coin.
+	coin2 1 coin is worth 28 points, 2 coins is worth 84 points.
+	coin3 1 coin is worth 98 points, 2 coins is worth 294 points.
+	coin4 1 coin is worth 343 points.
+	(points) × 1000 ÷ GetTime()
+	
+	Fail if:
+		AllPlayers contains 2 same prefabs
+		Unmathched
+		Food cache is not nil
+		Food failed
+]]
+
+local FOOD_POINTS = 0
+local POINTS = 0
+
+local FAILED_FOODS = {
+	quagmire_food_plate_goop = true,
+    quagmire_food_bowl_goop = true,
+}
+
+local COIN_VALUES = {
+	[1] = {[1] = 1},
+	[2] = {[1] = 28, [2] = 84},
+	[3] = {[1] = 98, [2] = 294},
+	[4] = {[1] = 343},
+}
+
+local TOURNAMENT_FAILED
+local TOURNAMENT_CACHE = {}
+
 AddWorldPostInit(function(w)
-	--когда скармливаем
+	w:DoTaskInTime(0, function(w)
+		local scanned_players = {}
+		for k in pairs(AllPlayers) do
+			if not scanned_players[k] then
+				scanned_players[k] = true
+			else
+				TOURNAMENT_FAILED = true
+			end
+		end
+	end)
+	
+	--[[
+		product = _recipename:value(),
+		dish = DISH_NAMES[_dish:value()],
+		silverdish = _silverdish:value(),
+		maxvalue = _maxvalue:value(),
+		matchedcraving = matchedcraving,
+		snackpenalty = _snackpenalty:value(),
+		coins = coins,
+		
+		[00:10:45]: K: 	1	 V: 	10	
+		[00:10:45]: K: 	2	 V: 	0	
+		[00:10:45]: K: 	3	 V: 	0	
+		[00:10:45]: K: 	4	 V: 	0	
+	]]
 	w:ListenForEvent("quagmire_recipeappraised", function(w, data)
+		for coin, count in pairs(data.coins) do
+			if count <= 0 then print("count = 0") return end
+			
+			if coin > 1 then
+				--print("POINTS + "..COIN_VALUES[coin][count])
+				FOOD_POINTS = FOOD_POINTS + COIN_VALUES[coin][count]
+			else
+				--print("COIN POINTS = "..count)
+				FOOD_POINTS = FOOD_POINTS + count
+			end
+		end
+	
 		_G.ThePlayer.HUD.controls.gorge_counter:AddMeal()
+		
+		if not TOURNAMENT_CACHE[data.product] then
+			TOURNAMENT_CACHE[data.product] = true
+		else
+			TOURNAMENT_FAILED = true
+		end
+		
+		if not data.matchedcraving then
+			TOURNAMENT_FAILED = true
+		end
+	end)
+	
+	--[[
+		product = _recipename:value(),
+		dish = DISH_NAMES[_dish:value()],
+		station = station,
+		overcooked = _overcooked:value(),
+		ingredients = ingredients,
+	]]
+	
+	w:ListenForEvent("quagmire_recipediscovered", function(w, data)
+		if data.overcooked or FAILED_FOODS[data.product] then
+			TOURNAMENT_FAILED = true
+		end
+	end)
+	
+	w.recalc_points_task = w:DoPeriodicTask(.1, function(w)
+		POINTS = FOOD_POINTS * 1000 / GetTime()
+		--print(POINTS)
 	end)
 end)
 
@@ -398,6 +505,12 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
 		else
 			self.sap_timer:SetIsNotSet()
 		end
+		
+		if TOURNAMENT_FAILED then
+			Score:SetIsFailed()
+		else
+			Score:SetScore(POINTS)
+		end
 	end
 end)
 
@@ -440,6 +553,7 @@ end)
 
 --Extended salt timer
 --Zarklord: we don't currently properly handle having mutliple salt racks so we do this for the first salt rack only.
+
 local once
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
 	local x, y, z = inst:GetPosition()
