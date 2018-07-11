@@ -565,6 +565,7 @@ local cached_rack
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
 	if not cached_rack or cached_rack == inst then
 		if inst.find_task then inst.find_task:Cancel() end
+		
 		inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
 			if SaltTimer.start_time == 0 and not inst:HasTag("harvestable") then
 				SaltTimer:Start()
@@ -572,6 +573,7 @@ AddPrefabPostInit("quagmire_salt_rack", function(inst)
 				SaltTimer:Finish()
 			end
 		end)
+		
 		cached_rack = inst
 	end
 end)
