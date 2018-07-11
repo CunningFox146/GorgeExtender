@@ -30,9 +30,10 @@ function Score:SetIsFailed()
 	self.failed = true
 	
 	self.str:ScaleTo(1, 0, .35, function()
-		self.str:SetString("Failed")
+		self.str:SetPosition(-75, 0)
+		self.str:SetString(s.FAILED)
 		self.str:SetColour({255/255, 155/255, 155/255, 1})
-		self.inst:DoTaskInTime(FRAMES, function() self.str:ScaleTo(0, 1, .35) end)
+		self.inst:DoTaskInTime(FRAMES, function() self.str:ScaleTo(0, 1, .35) TheFrontEnd:GetSound():PlaySound("gorge_extender/fail_sound/fail") end)
 	end)
 end
 

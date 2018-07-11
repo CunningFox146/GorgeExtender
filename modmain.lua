@@ -1,6 +1,6 @@
 modimport("scripts/libs/lib_ver.lua")
 
-_G.CHEATS_ENABLED = true
+-- _G.CHEATS_ENABLED = true
 
 --Not launching if some other fork is enabled
 if mods.quagmire_cunningfox ~= nil then
@@ -17,6 +17,7 @@ local STRINGS = _G.STRINGS
 local s = STRINGS
 
 STRINGS.GORGE_EXTENDER = {
+	FAILED = "Failed",
 	SALT_HINT = "Press %s to start salt timer, and %s to stop!",
 	UNKNOWN = "???",
 	SNACK = "Snack",
@@ -37,6 +38,7 @@ STRINGS.GORGE_EXTENDER = {
 --Нативный русский
 if mods.RussianLanguagePack then
 	STRINGS.GORGE_EXTENDER = {
+		FAILED = "Провал",
 		SALT_HINT = "Нажми %s чтоб запустить таймер, и %s чтоб отключить!",
 		UNKNOWN = "???",
 		SNACK = "Закуска",
@@ -86,16 +88,17 @@ AddClassPostConstruct("screens/redux/multiplayermainscreen", function(self, ...)
 end)
 
 --We don't need to do other things outside the gorge
--- if TheNet:GetServerGameMode() ~= "quagmire" then
-	-- print("[Gorge extender] Not in Gorge. Aborting...")
-	-- return
--- end
+if TheNet:GetServerGameMode() ~= "quagmire" then
+	print("[Gorge extender] Not in Gorge. Aborting...")
+	return
+end
 
 Assets = 
 {
-	Asset("ANIM", "anim/quagmire_goatmom_basic.zip"),
 	Asset("ATLAS", "images/gorge_foods_data.xml"),
-	Asset("ATLAS", "images/quagmire_hud.xml"),
+
+	Asset("SOUNDPACKAGE", "sound/gorge_extender.fev"),
+	Asset("SOUND", "sound/gorge_extender.fsb"),
 }
 
 do
@@ -120,6 +123,7 @@ local SaltWidget = require "widgets/salt_widget"
 local SpeedWidget = require "widgets/speed_widget"
 local SapWidget = require "widgets/sap_widget"
 local TournamentScore = require "widgets/gorge_score"
+local BillyIndicator = require "widgets/billyindicator"
 
 local Score
 
@@ -351,7 +355,7 @@ AddWorldPostInit(function(w)
 	]]
 	w:ListenForEvent("quagmire_recipeappraised", function(w, data)
 		for coin, count in pairs(data.coins) do
-			if count <= 0 then print("count = 0") return end
+			if count <= 0 then return end
 			
 			if coin > 1 then
 				--print("POINTS + "..COIN_VALUES[coin][count])
@@ -369,11 +373,13 @@ AddWorldPostInit(function(w)
 		else
 			TOURNAMENT_FAILED = true
 		end
-		
-		if not data.matchedcraving then
+	end)
+	
+	w:ListenForEvent("quagmirehangrinessmatched", function(src, data)
+        if not data.matched then
 			TOURNAMENT_FAILED = true
 		end
-	end)
+    end)
 	
 	--[[
 		product = _recipename:value(),
@@ -390,7 +396,7 @@ AddWorldPostInit(function(w)
 	end)
 	
 	w.recalc_points_task = w:DoPeriodicTask(.1, function(w)
-		POINTS = FOOD_POINTS * 1000 / GetTime()
+		POINTS = (FOOD_POINTS * 1000) / GetTime()
 		--print(POINTS)
 	end)
 end)
@@ -553,11 +559,9 @@ end)
 
 --Extended salt timer
 --Zarklord: we don't currently properly handle having mutliple salt racks so we do this for the first salt rack only.
-
-local once
+local cached_rack
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
-	local x, y, z = inst:GetPosition()
-	if once == nil or (once.x == x and once.y == y and once.z == z) then
+	if not cached_rack or cached_rack == inst.GUID then
 		if inst.find_task then inst.find_task:Cancel() end
 		inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
 			if SaltTimer.start_time == 0 and not inst:HasTag("harvestable") then
@@ -566,8 +570,77 @@ AddPrefabPostInit("quagmire_salt_rack", function(inst)
 				SaltTimer:Finish()
 			end
 		end)
-		once = {x = x, y = y, z = z}
+		cached_rack = inst.GUID
 	end
+end)
+
+--Billy Indicator
+_G.BILLY = {}
+
+local function RGB(r, g, b)
+    return { r / 255, g / 255, b / 255, 1 }
+end
+
+AddClassPostConstruct("screens/playerhud", function(self)
+	function self:AddBillyIndicator(target)
+		if not self.billyindicators then
+			self.billyindicators = {}
+		end
+
+		local bi = self.under_root:AddChild(BillyIndicator(self.owner, target, RGB(80+25, 148+25, 137+25)))
+		table.insert(self.billyindicators, bi)
+	end
+		
+	function self:HasBillyIndicator(target)
+		if not self.billyindicators then return end
+
+		for i,v in pairs(self.billyindicators) do
+			if v and v:GetTarget() == target then
+				return true
+			end
+		end
+		return false
+	end
+	
+	function self:RemoveBillyIndicator(target)
+		if not self.billyindicators then return end
+
+		local index = nil
+		for i,v in pairs(self.billyindicators) do
+			if v and v:GetTarget() == target then
+				index = i
+				break
+			end
+		end
+		if index then
+			local bi = table.remove(self.billyindicators, index)
+			if bi then bi:Kill() end
+		end
+	end
+end)
+
+AddPlayersPostInit(function(inst)
+	inst:AddComponent("billyindicator")
+end)
+
+local function AddBilly(inst)
+	table.insert(_G.BILLY, inst)
+end
+
+local function RemoveBilly(inst)
+	local index = nil
+	for i,v in ipairs(_G.BILLY) do
+		if v == inst then
+			index = i
+			break
+		end
+	end
+	if index then table.remove(_G.BILLY, index) end
+end
+
+AddPrefabPostInit("quagmire_goatkid", function(inst)
+	inst:DoTaskInTime(0, AddBilly)
+	inst:ListenForEvent("onremove", RemoveBilly)
 end)
 
 --Renaming seeds
