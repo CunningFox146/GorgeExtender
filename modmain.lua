@@ -113,6 +113,7 @@ local COUNTER_POS = GetModConfigData("counter_leftright") or 1
 local COUNTER_OVERRIDE = GetModConfigData("counter_pos") or 0
 local COUNTER_SCALE = GetModConfigData("counter_scale") or 1
 local ROUNDING = GetModConfigData("rounding") or 1
+local TOURNAMENT_ENABLED = GetModConfigData("tournament")
 
 local Text = require "widgets/text"
 local Mum = require "widgets/goatmum_talker"
@@ -123,7 +124,6 @@ local SaltWidget = require "widgets/salt_widget"
 local SpeedWidget = require "widgets/speed_widget"
 local SapWidget = require "widgets/sap_widget"
 local TournamentScore = require "widgets/gorge_score"
-local BillyIndicator = require "widgets/billyindicator"
 
 local Score
 
@@ -149,11 +149,13 @@ AddClassPostConstruct("widgets/controls", function(self)
 	self.gorge_counter:MoveToBack()
 	self.gorge_counter:SetScale(COUNTER_SCALE)
 	
-	self.quag_score = self.right_root:AddChild(TournamentScore())
-	self.quag_score:SetPosition(0, 275)
-	self.quag_score:MoveToFront()
-	
-	Score = self.quag_score
+	if TOURNAMENT_ENABLED then
+		self.quag_score = self.right_root:AddChild(TournamentScore())
+		self.quag_score:SetPosition(0, 275)
+		self.quag_score:MoveToFront()
+		
+		Score = self.quag_score
+	end
 end)
 
 local sayings = --На что реагируем
@@ -512,10 +514,12 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
 			self.sap_timer:SetIsNotSet()
 		end
 		
-		if TOURNAMENT_FAILED then
-			Score:SetIsFailed()
-		else
-			Score:SetScore(POINTS)
+		if TOURNAMENT_ENABLED then
+			if TOURNAMENT_FAILED then
+				Score:SetIsFailed()
+			else
+				Score:SetScore(POINTS)
+			end
 		end
 	end
 end)
@@ -575,73 +579,76 @@ AddPrefabPostInit("quagmire_salt_rack", function(inst)
 end)
 
 --Billy Indicator
-_G.BILLY = {}
+if GetModConfigData("billy") then
+	local BillyIndicator = require "widgets/billyindicator"
+	_G.BILLY = {}
 
-local function RGB(r, g, b)
-    return { r / 255, g / 255, b / 255, 1 }
-end
-
-AddClassPostConstruct("screens/playerhud", function(self)
-	function self:AddBillyIndicator(target)
-		if not self.billyindicators then
-			self.billyindicators = {}
-		end
-
-		local bi = self.under_root:AddChild(BillyIndicator(self.owner, target, RGB(80+25, 148+25, 137+25)))
-		table.insert(self.billyindicators, bi)
+	local function RGB(r, g, b)
+		return { r / 255, g / 255, b / 255, 1 }
 	end
-		
-	function self:HasBillyIndicator(target)
-		if not self.billyindicators then return end
 
-		for i,v in pairs(self.billyindicators) do
-			if v and v:GetTarget() == target then
-				return true
+	AddClassPostConstruct("screens/playerhud", function(self)
+		function self:AddBillyIndicator(target)
+			if not self.billyindicators then
+				self.billyindicators = {}
+			end
+
+			local bi = self.under_root:AddChild(BillyIndicator(self.owner, target, RGB(80+25, 148+25, 137+25)))
+			table.insert(self.billyindicators, bi)
+		end
+			
+		function self:HasBillyIndicator(target)
+			if not self.billyindicators then return end
+
+			for i,v in pairs(self.billyindicators) do
+				if v and v:GetTarget() == target then
+					return true
+				end
+			end
+			return false
+		end
+		
+		function self:RemoveBillyIndicator(target)
+			if not self.billyindicators then return end
+
+			local index = nil
+			for i,v in pairs(self.billyindicators) do
+				if v and v:GetTarget() == target then
+					index = i
+					break
+				end
+			end
+			if index then
+				local bi = table.remove(self.billyindicators, index)
+				if bi then bi:Kill() end
 			end
 		end
-		return false
-	end
-	
-	function self:RemoveBillyIndicator(target)
-		if not self.billyindicators then return end
+	end)
 
+	AddPlayersPostInit(function(inst)
+		inst:AddComponent("billyindicator")
+	end)
+
+	local function AddBilly(inst)
+		table.insert(_G.BILLY, inst)
+	end
+
+	local function RemoveBilly(inst)
 		local index = nil
-		for i,v in pairs(self.billyindicators) do
-			if v and v:GetTarget() == target then
+		for i,v in ipairs(_G.BILLY) do
+			if v == inst then
 				index = i
 				break
 			end
 		end
-		if index then
-			local bi = table.remove(self.billyindicators, index)
-			if bi then bi:Kill() end
-		end
+		if index then table.remove(_G.BILLY, index) end
 	end
-end)
 
-AddPlayersPostInit(function(inst)
-	inst:AddComponent("billyindicator")
-end)
-
-local function AddBilly(inst)
-	table.insert(_G.BILLY, inst)
+	AddPrefabPostInit("quagmire_goatkid", function(inst)
+		inst:DoTaskInTime(0, AddBilly)
+		inst:ListenForEvent("onremove", RemoveBilly)
+	end)
 end
-
-local function RemoveBilly(inst)
-	local index = nil
-	for i,v in ipairs(_G.BILLY) do
-		if v == inst then
-			index = i
-			break
-		end
-	end
-	if index then table.remove(_G.BILLY, index) end
-end
-
-AddPrefabPostInit("quagmire_goatkid", function(inst)
-	inst:DoTaskInTime(0, AddBilly)
-	inst:ListenForEvent("onremove", RemoveBilly)
-end)
 
 --Renaming seeds
 if GetModConfigData("rename_seeds") then

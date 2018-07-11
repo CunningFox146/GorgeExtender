@@ -109,6 +109,19 @@ local SEPARATOR = Title("")
 
 configuration_options = {
 	Title(russian and "Главное" or "Main"),
+	{
+		name = "tournament",
+		label = russian and "Вклюсть счетчик очков турнира" or "Enable tournament score counter",
+		options = opt_YesNo,
+		default = 3,
+	},
+	
+	{
+		name = "billy",
+		label = russian and "Вклюсть индикатор Билли" or "Enable Billy indicator",
+		options = opt_YesNo,
+		default = 3,
+	},
 	
 	{
 		name = "counter_mode",
