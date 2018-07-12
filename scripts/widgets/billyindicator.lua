@@ -100,6 +100,10 @@ function BillyIndicator:OnUpdate()
     -- then grab the new position of the target and update the HUD elt's pos accordingly
     -- kill on this is rough: it just pops in/out. would be nice if it faded in/out...
 
+	if not self.owner:IsValid() or not self.target:IsValid() then
+		return
+	end
+	
     local dist = self.owner:GetDistanceSqToInst(self.target)
     dist = math.sqrt(dist)
 

@@ -368,7 +368,7 @@ AddWorldPostInit(function(w)
 			end
 		end
 	
-		if not TOURNAMENT_CACHE[data.product] then
+		if not TOURNAMENT_CACHE[data.product] and data.product ~= "quagmire_syrup" then
 			TOURNAMENT_CACHE[data.product] = true
 		else
 			TOURNAMENT_FAILED = true
@@ -388,12 +388,12 @@ AddWorldPostInit(function(w)
 		overcooked = _overcooked:value(),
 		ingredients = ingredients,
 	]]
-	
+	--[[
 	w:ListenForEvent("quagmire_recipediscovered", function(w, data)
 		if data.overcooked or FAILED_FOODS[data.product] then
 			TOURNAMENT_FAILED = true
 		end
-	end)
+	end)]]
 	
 	w.recalc_points_task = w:DoPeriodicTask(.1, function(w)
 		POINTS = (FOOD_POINTS * 1000) / GetTime()
@@ -561,21 +561,24 @@ end)
 
 --Extended salt timer
 --Zarklord: we don't currently properly handle having mutliple salt racks so we do this for the first salt rack only.
-local cached_rack
+local once = nil
 AddPrefabPostInit("quagmire_salt_rack", function(inst)
-	if not cached_rack or cached_rack == inst then
-		if inst.find_task then inst.find_task:Cancel() end
-		
-		inst.find_task = inst:DoPeriodicTask(FRAMES, function(inst)
-			if SaltTimer.start_time == 0 and not inst:HasTag("harvestable") then
-				SaltTimer:Start()
-			elseif SaltTimer.start_time ~= 0 and inst:HasTag("harvestable") then
-				SaltTimer:Finish()
-			end
-		end)
-		
-		cached_rack = inst
-	end
+	inst:DoTaskInTime(0, function(inst)
+		local x, y, z = inst:GetPosition()
+		if once == nil or (once.x == x and once.y == y and once.z == z) then
+			if inst.find_task then inst.find_task:Cancel() end
+			inst.find_task = inst:DoPeriodicTask(0.5, function(inst)
+				if SaltTimer.start_time == 0 and not inst:HasTag("harvestable") then
+					SaltTimer:Start()
+				elseif SaltTimer.start_time ~= 0 and inst:HasTag("harvestable") then
+					SaltTimer:Finish()
+				end
+			end)
+			
+			once = {x = x, y = y, z = z}
+			SaltTimer.salt = inst
+		end
+	end)
 end)
 
 --Billy Indicator

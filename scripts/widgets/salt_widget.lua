@@ -34,6 +34,9 @@ end)
 
 function Timer:Start()
 	TheFrontEnd:StartUpdatingWidget(self)
+	
+	self.finished = false
+	
 	self.start_time = os.time()
 
 	if not self.set then
@@ -50,7 +53,10 @@ end
 
 function Timer:Finish()
 	TheFrontEnd:StopUpdatingWidget(self)
-
+	if self.finished then return end
+	
+	self.finished = true
+	
 	self.start_time = 0
 	self.time:ScaleTo(1, 0, .5, function() self.time:Hide() end)
 	--self.checkmark:Show()
@@ -69,6 +75,11 @@ function Timer:OnUpdate(dt)
 	else
 		self:Finish()
 	end
+	
+	--Shows the dis-sync image when you're far from salt
+	-- if self.salt and not self.salt.entity:FrustumCheck() then
+		-- print("Salt is not synced")
+	-- end
 end
 
 return Timer
