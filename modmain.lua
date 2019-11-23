@@ -58,34 +58,16 @@ if mods.RussianLanguagePack then
 end
 
 --No warning about mods in events
-AddClassPostConstruct("screens/redux/multiplayermainscreen", function(self)
-	local TheFrontEnd = _G.TheFrontEnd
-	local PopupDialogScreen = require "screens/redux/popupdialog"
-	
-	--I don't know how to get it from here, so just replacing it
-	function self:OnFestivalEventButton()
-		if TheFrontEnd:GetIsOfflineMode() or not TheNet:IsOnlineMode() then
-			TheFrontEnd:PushScreen(PopupDialogScreen(STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_TITLE, STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_BODY[WORLD_FESTIVAL_EVENT], 
-				{
-					{text=STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_LOGIN, cb = function()
-							_G.SimReset()
-						end},
-					{text=STRINGS.UI.FESTIVALEVENTSCREEN.OFFLINE_POPUP_BACK, cb=function() TheFrontEnd:PopScreen() end },
-				}))
-		else
-			self:_GoToFestfivalEventScreen()
-		end
-	end
-end)
 
 --Checking for mod updates
+--[[
 local UpdateChecker = require("widgets/gorge_updater")
 
 AddClassPostConstruct("screens/redux/multiplayermainscreen", function(self, ...)
 	self.gorge_updater = self.title:AddChild(UpdateChecker())
 	self.gorge_updater:SetScale(2.15)
 	self.gorge_updater:SetPosition(875, -50)
-end)
+end)]]
 
 --We don't need to do other things outside the gorge
 if TheNet:GetServerGameMode() ~= "quagmire" then

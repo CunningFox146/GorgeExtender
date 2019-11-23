@@ -1,6 +1,6 @@
 name = " Gorge extender"
 author = "Cunning fox, Zarklord"
-version = "2.11"
+version = "2.2"
 
 russian = name.utf8len and (russian or language == "ru")
 
@@ -11,6 +11,8 @@ description = (
 	"Adds timer, meal counter, talker widget and meal reminder and more! \nVer. "..version
 )
 forumthread = ""
+
+gorge_compatible = true
 
 client_only_mod = true
 dst_compatible = true
